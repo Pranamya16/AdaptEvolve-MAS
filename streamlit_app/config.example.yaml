@@ -1,0 +1,20 @@
+credentials:
+  usernames:
+    your_username:
+      email: your@email.com
+      name: Your Name
+      # Generate bcrypt hash: python -c "import bcrypt; print(bcrypt.hashpw(b'yourpassword', bcrypt.gensalt()).decode())"
+      password: "$2b$12$REPLACE_WITH_YOUR_BCRYPT_HASH"
+    demo_user:
+      email: demo@yourdomain.com
+      name: Demo User
+      password: "$2b$12$REPLACE_WITH_YOUR_BCRYPT_HASH"
+
+cookie:
+  expiry_days: 7
+  # Use any random string of 32+ characters — keep it secret
+  key: "REPLACE_WITH_A_RANDOM_32_CHAR_SECRET_KEY"
+  name: adaptiwolf_auth
+
+preauthorized:
+  emails: []

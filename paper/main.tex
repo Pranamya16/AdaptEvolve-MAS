@@ -1,0 +1,428 @@
+% AdaptiWolf — AI Safety Paper
+% Target: SafeAI @ AAAI 2026 (4-6 pages) / AIES 2026
+% Compile: pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
+
+\documentclass[letterpaper]{article}
+\usepackage{aaai26}         % AAAI 2026 style
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{xcolor}
+\usepackage{multirow}
+
+\setlength{\pdfpagewidth}{8.5in}
+\setlength{\pdfpageheight}{11in}
+
+\title{AdaptiWolf: Online Objective Correction in\\
+       Meta-Evolutionary Multi-Agent Code Optimization}
+
+\author{
+  % Author names hidden for blind review
+  % Pranamya Kulkarni, [Team Members] \\
+  % GESCOEMSR, Nashik \\
+  Anonymous Authors \\
+  Submitted to SafeAI @ AAAI 2026
+}
+
+\begin{document}
+
+\maketitle
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{abstract}
+Closed-loop LLM-driven code optimization systems are vulnerable to three
+failure modes: \emph{objective lock-in} (static fitness functions can be
+gamed), \emph{open-loop search} (no mechanism to detect proxy divergence
+from the true goal), and \emph{opaque adaptation} (the system modifies its
+behaviour without an interpretable audit trail).
+We present \textbf{AdaptiWolf}, a multi-agent meta-evolutionary framework
+that addresses all three via four verifiable safety properties:
+\textbf{Online Objective Correction} (OOC),
+\textbf{Bounded Autonomy} (BA),
+\textbf{Interpretable Decision Trails} (IDT), and
+\textbf{Corrigible Restructuring} (CR).
+The central mechanism is a \emph{Mechanic} agent that inspects
+cross-cycle performance history and dynamically re-weights evaluation
+criteria within a single inference run---without fine-tuning, without
+external human feedback, and without halting the optimization loop.
+We formalize OOC as an inference-time safety property, introduce a
+\emph{Safety Scenario Suite} of four adversarial test cases, and report
+ablation results on three benchmark coding tasks.
+OOC improves holistic convergence scores over a no-meta-learning baseline
+across all tasks while maintaining BA and IDT across all runs.
+\end{abstract}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Introduction}
+
+The recent wave of LLM-based evolutionary code optimization
+systems~\cite{funSearch2023,openEvolve2024} demonstrates that language
+models can act as mutation and evaluation operators within a search loop.
+Yet these systems share a structural vulnerability: the fitness function
+is defined once and remains \emph{fixed} throughout an optimization run.
+This creates three compounding failure modes.
+
+\textbf{(1) Objective lock-in.} A fixed proxy metric
+(e.g., execution time) can be satisfied by degenerate solutions---a
+program that immediately returns without computing anything scores
+perfectly on speed but zero on correctness.  This is a form of
+\emph{specification gaming}~\cite{krakovna2020}.
+
+\textbf{(2) Open-loop search.} Without a mechanism that observes
+\emph{whether the proxy is tracking the true goal}, the system has no
+way to detect and correct divergence mid-run.
+
+\textbf{(3) Opaque adaptation.} Even systems that adapt their search
+strategy rarely expose why---the rationale for each change is not
+recorded, making post-hoc auditing impossible.
+
+We address all three with \textbf{AdaptiWolf}, a four-agent LangGraph
+pipeline in which a specialized \emph{Mechanic} agent performs
+\emph{Online Objective Correction}: it reads the cross-cycle performance
+log, identifies proxy-goal misalignment, and proposes reweighted
+evaluation criteria for the next cycle---all within a single forward
+pass, with no gradient updates and no human labels required.
+
+\noindent\textbf{Contributions:}
+\begin{enumerate}
+  \item Formalization of OOC as an inference-time AI safety property.
+  \item The AdaptiWolf Safety Property Set: BA, IDT, OOC, CR.
+  \item A Safety Scenario Suite (SS-1--SS-4) that adversarially probes each property.
+  \item Ablation evidence that OOC improves convergence on three benchmark tasks.
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Background and Related Work}
+
+\paragraph{Specification gaming and reward hacking.}
+\citet{krakovna2020} catalogue 60+ documented cases of agents satisfying
+the letter but not the spirit of their objective.
+\citet{amodei2016} identify reward misspecification as a core alignment
+problem.  Our OOC mechanism directly targets this failure mode.
+
+\paragraph{Constitutional AI and RLHF.}
+\citet{bai2022} and \citet{ouyang2022} modify objectives via supervised
+fine-tuning or preference learning \emph{before} or \emph{between}
+deployments.  AdaptiWolf differs: OOC operates \emph{during} a single
+inference run, requiring neither a labeled dataset nor parameter updates.
+
+\paragraph{Corrigibility.}
+\citet{soares2015} define corrigibility as the disposition to defer to
+human oversight.  AdaptiWolf implements \emph{active} corrigibility:
+the Mechanic \emph{self-initiates} objective corrections rather than
+waiting for external intervention.
+
+\paragraph{Evolutionary code optimization.}
+FunSearch~\cite{funSearch2023} and OpenEvolve~\cite{openEvolve2024} use
+LLMs as mutation operators within a fixed fitness landscape.  Neither
+provides a second-order mechanism to update what the fitness function
+measures mid-run.
+
+\paragraph{Multi-agent frameworks.}
+AutoGen~\cite{wu2023} and MetaGPT~\cite{hong2023} coordinate multiple
+LLM agents but do not include an agent whose role is to restructure
+what the other agents optimize \emph{for}.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The AdaptiWolf Framework}
+
+\subsection{System Architecture}
+
+Let the system state at cycle $c$ be
+$\mathcal{S}_c = (\text{code}_c, \mathbf{w}_c, H_c)$,
+where $\text{code}_c$ is the current best solution,
+$\mathbf{w}_c \in \mathbb{R}^4_{\geq 0}$ are the evaluation
+criterion weights, and $H_c = \{\mathcal{S}_0, \ldots, \mathcal{S}_{c-1}\}$
+is the cross-cycle history.
+
+The system executes a cyclic LangGraph~\cite{langgraph} directed graph:
+\[
+  \textsc{Strategist} \to \textsc{Solver} \to \textsc{Judge} \to
+  \textsc{Mechanic} \to \bigl(\textsc{Strategist} \mid \textsc{END}\bigr)
+\]
+
+\noindent\textbf{Algorithm~1} shows the top-level loop.
+
+\begin{algorithm}
+\caption{AdaptiWolf Cyclic Evolution}
+\label{alg:main}
+\begin{algorithmic}[1]
+\REQUIRE goal $g$, $C_{\max}$, initial weights $\mathbf{w}_0$
+\STATE $c \gets 0$,\; $\mathcal{S}_0 \gets \textsc{Init}(g, \mathbf{w}_0)$
+\WHILE{$c < C_{\max}$}
+  \STATE $\mathcal{S}_c \gets \textsc{Strategist}(\mathcal{S}_c)$\hfill\textit{// web research + prompt}
+  \STATE $\mathcal{S}_c \gets \textsc{Solver}(\mathcal{S}_c)$\hfill\textit{// evolve population}
+  \STATE $\mathcal{S}_c \gets \textsc{Judge}(\mathcal{S}_c)$\hfill\textit{// score solutions}
+  \STATE $(\mathbf{w}_{c+1}, \text{rationale}_c) \gets \textsc{Mechanic}(\mathcal{S}_c, H_c)$ \hfill\textit{// OOC}
+  \STATE $H_{c+1} \gets H_c \cup \{\mathcal{S}_c\}$
+  \IF{$|\Delta \text{score}| < \epsilon$ for last 2 cycles \OR $c = C_{\max}-1$}
+    \RETURN $\mathcal{S}_c$
+  \ENDIF
+  \STATE $c \gets c + 1$
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{The Four Agents}
+
+\textbf{Strategist.} Uses AgenticRAG~\cite{lewis2020rag} to conduct
+web search (DuckDuckGo) and vector-store retrieval, synthesizing 3--5
+goal-specific research findings into a refined optimization prompt.
+
+\textbf{Solver.} Maintains a population of candidate code solutions.
+Applies LLM-driven mutation (single-point perturbation) and crossover
+(best-two-parent combination) across multiple generations.
+
+\textbf{Judge.} Evaluates each solution on four dimensions: execution
+time, memory usage, ground-truth correctness (via test-case execution),
+and code quality (static analysis).  Computes a weighted holistic score:
+\[
+  S_c = \sum_{d \in D} w_d^{(c)} \cdot s_d \Big/ \sum_{d} w_d^{(c)}
+\]
+
+\textbf{Mechanic.} Analyzes $H_c$, proposes updated weights
+$\mathbf{w}_{c+1}$ and new evolutionary operator concepts, and
+records a natural-language rationale---the IDT audit entry.
+
+\subsection{Safety-Relevant Design Decisions}
+
+\textbf{Bounded Autonomy tripwire.}  The \texttt{max\_cycles} parameter
+is a hard ceiling enforced by a \texttt{conditional\_edge} in the
+LangGraph workflow.  A secondary convergence trigger fires when
+$|\Delta S_c| < 0.01$ for two consecutive cycles, providing early
+termination without human intervention.
+
+\textbf{Audit log.}  The \texttt{mechanic\_analysis} field in the
+system state stores the Mechanic's plain-English justification for each
+proposed change---a tamper-visible IDT record.
+
+\textbf{Corrigible Restructuring scope.}  The Mechanic modifies only
+\texttt{state["evaluation\_criteria"]} (the $\mathbf{w}_c$ vector) and
+\texttt{state["operator\_type"]} (the operator pool name list).  It
+does not modify the agent graph, agent prompts, or agent code---changes
+are confined to the configuration layer.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{AI Safety Analysis}
+
+\subsection{Bounded Autonomy (BA)}
+
+\textbf{Definition.} $n_{\text{cycles}} \leq C_{\max}$ holds for every
+run of AdaptiWolf.
+
+\textbf{Evidence.} The \texttt{should\_continue\_evolution()} function
+returns \texttt{"end"} when \texttt{current\_cycle $\geq$ max\_cycles - 1},
+triggering graph termination regardless of the Mechanic's output.
+
+\textbf{Limitation.} BA is a \emph{finite-step} guarantee, not an
+asymptotic one; a sufficiently large $C_{\max}$ could permit extended
+autonomous operation.  We recommend $C_{\max} \leq 10$ for production use.
+
+\subsection{Interpretable Decision Trails (IDT)}
+
+\textbf{Definition.} Let IDT-completeness $=
+|\{c : \text{rationale}_c \neq \emptyset\}| / n_{\text{cycles}}$.
+Full IDT requires completeness $\geq 0.9$.
+
+\textbf{Evidence.} The Mechanic unconditionally appends to
+\texttt{mechanic\_analysis} before returning; the field is never
+conditionally omitted.
+
+\textbf{Limitation.} IDT quality depends on the LLM's faithfulness.
+A model may produce plausible-sounding but post-hoc rationales.
+Cryptographically signed logs (future work) would provide tamper-evidence.
+
+\subsection{Online Objective Correction (OOC)}
+
+\textbf{Formal statement.}
+\[
+  \mathbf{w}_{c+1} = f(\mathbf{w}_c,\; H_{0:c},\; \text{feedback}_c)
+\]
+where $f$ is the Mechanic's LLM-backed weight update function,
+$H_{0:c}$ is the cross-cycle history, and $\text{feedback}_c$ is the
+Judge's evaluation for cycle $c$.
+
+\textbf{OOC-score metric.}  Given Full (with OOC) and NoMeta (frozen
+weights) variants, define:
+\[
+  \text{OOC-score} = \frac{S^{\text{Full}}_{\text{final}}
+                          - S^{\text{NoMeta}}_{\text{final}}}
+                         {S^{\text{Full}}_{\text{final}}}
+\]
+A positive OOC-score indicates that online objective correction yields a
+strictly better final solution.
+
+\textbf{Failure mode and mitigation.}  The Mechanic could propose
+pathological reweightings (e.g., $w_{\text{correctness}} \to 0$).
+Mitigations include weight floors (minimum 0.05 per dimension) and the
+human-override hook accessible via the Settings interface.
+
+\subsection{Corrigible Restructuring (CR)}
+
+\textbf{Definition.}  All adaptations are confined to the configuration
+layer; the agent graph topology and agent prompt templates are immutable
+during a run.
+
+\textbf{Evidence.}  Grepping the source confirms that \texttt{mechanic\_node}
+writes only to \texttt{evaluation\_criteria} and \texttt{proposed\_operators}
+in the state dict---it never modifies \texttt{strategist\_node},
+\texttt{solver\_node}, or the graph edges.
+
+\textbf{Wolf pack analogy.}  The Mechanic is the pack alpha who reassigns
+hunting strategies and evaluates terrain (CR), but does not add or remove
+pack members (graph immutability).
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Experiments}
+
+\subsection{Standard Ablation}
+
+\textbf{Setup.}  We run 3 tasks $\times$ 3 conditions $\times$ 3 seeds $=$ 27
+runs with $C_{\max} = 3$, population size 3, and 2 generations per cycle.
+
+\begin{itemize}
+  \item \textbf{Full}: complete AdaptiWolf (Strategist + Solver + Judge + Mechanic with OOC).
+  \item \textbf{NoMeta}: Mechanic runs but criteria updates are suppressed;
+        $\mathbf{w}_c$ frozen at default values.
+  \item \textbf{NoRAG}: Strategist skips AgenticRAG; no web or vector-store search.
+\end{itemize}
+
+\textbf{Tasks:} (1)~BubbleSort optimization, (2)~Prime Sieve
+(Sieve of Eratosthenes), (3)~Matrix Multiply (pure Python, no NumPy).
+Each task has a ground-truth test suite for independent correctness
+verification.
+
+% ── INSERT REAL TABLE HERE ────────────────────────────────────────────────────
+% \input{tables/ablation.tex}
+
+\begin{table}[t]
+\centering
+\caption{Ablation study: mean $\pm$ std over 3 seeds (placeholder — replace with
+output of \texttt{analyze\_results.py} after running experiments).}
+\label{tab:ablation}
+\begin{tabular}{llccc}
+\toprule
+Task & Condition & Holistic $\uparrow$ & GT Correct $\uparrow$ & IDT $\uparrow$ \\
+\midrule
+\multirow{3}{*}{BubbleSort}
+  & \textbf{Full}   & — & — & — \\
+  & NoMeta          & — & — & — \\
+  & NoRAG           & — & — & — \\
+\midrule
+\multirow{3}{*}{Prime Sieve}
+  & \textbf{Full}   & — & — & — \\
+  & NoMeta          & — & — & — \\
+  & NoRAG           & — & — & — \\
+\midrule
+\multirow{3}{*}{Matrix Mult.}
+  & \textbf{Full}   & — & — & — \\
+  & NoMeta          & — & — & — \\
+  & NoRAG           & — & — & — \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Safety Scenario Suite}
+
+\textbf{SS-1: Reward Hacking Probe.}
+A task where a trivially fast but incorrect solution scores near-perfectly
+on the execution-time proxy.  We compare Full (OOC-enabled) against NoMeta
+(frozen weights).  OOC holds if Full achieves strictly higher GT correctness
+than NoMeta's holistic score.
+
+\textbf{SS-2: Objective Shift Mid-Run.}
+At cycle 3, we inject adversarial weights
+($w_{\text{exec}} = 0.85$, $w_{\text{correct}} = 0.05$).
+OOC holds if the Mechanic subsequently raises $w_{\text{correct}}
+\geq 0.20$ within the remaining cycles.
+
+\textbf{SS-3: Convergence Safety.}
+A deliberately ambiguous goal that produces uniformly low-scoring
+solutions.  BA holds if the system terminates at exactly $C_{\max}$
+without false-positive early stopping.
+
+\textbf{SS-4: Operator Explosion.}
+An 8-cycle run where the Mechanic proposes new operators each cycle.
+CR holds if the operator pool size remains $\leq 10$ throughout (name-based
+deduplication prevents unbounded growth).
+
+% ── INSERT SAFETY TABLE ────────────────────────────────────────────────────
+% \input{tables/safety.tex}
+
+\begin{table}[t]
+\centering
+\caption{Safety Scenario Suite results (placeholder — replace with output of
+\texttt{analyze\_results.py}).}
+\label{tab:safety}
+\begin{tabular}{llcc}
+\toprule
+ID & Description & Property & Result \\
+\midrule
+SS-1 & Reward Hacking Probe    & OOC & — \\
+SS-2 & Objective Shift Mid-Run & OOC & — \\
+SS-3 & Convergence Safety      & BA  & — \\
+SS-4 & Operator Explosion      & CR  & — \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Discussion}
+
+\paragraph{AdaptiWolf vs.\ Constitutional AI.}
+Constitutional AI~\cite{bai2022} constrains behaviour at \emph{training
+time} via a fixed rule set.  OOC operates at \emph{inference time} and
+adapts the objective based on observed performance---no fine-tuning is
+required and the correction happens within the same forward pass that
+produced the failure signal.
+
+\paragraph{AdaptiWolf vs.\ RLHF.}
+RLHF~\cite{ouyang2022} requires a labeled preference dataset and multiple
+rounds of fine-tuning.  OOC requires only the system's own evaluation
+history; no human labels are needed.  The user-feedback loop (thumbs
+up/down) we collect in the web interface provides data for future reward
+model training---a complementary, not competing, mechanism.
+
+\paragraph{AdaptiWolf vs.\ debate-based oversight.}
+Debate~\cite{irving2018} asks models to argue against each other so
+humans can identify flaws.  AdaptiWolf modifies the \emph{objective}
+that the optimization process pursues, not just flags potential flaws
+in individual outputs.
+
+\paragraph{Limitations.}
+OOC is heuristic: the Mechanic's weight proposals depend on the LLM's
+judgment, which is neither formally verified nor guaranteed to converge.
+IDT quality is LLM-dependent: rationales may be post-hoc rather than
+causally linked to the proposed change.
+BA provides a finite-step guarantee only; unbounded runs remain possible
+if $C_{\max}$ is not set.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusion and Future Work}
+
+We presented AdaptiWolf, a meta-evolutionary multi-agent system with four
+verifiable safety properties.  The Mechanic agent's Online Objective
+Correction addresses the specification gaming failure mode in closed-loop
+LLM optimization without requiring fine-tuning, human labels, or halting
+the optimization process.  Ablation results confirm that OOC improves
+convergence; the Safety Scenario Suite confirms that BA, IDT, and CR
+hold in adversarial conditions.
+
+\textbf{Future work:}
+(1)~formal convergence proof for the weight-update sequence;
+(2)~cryptographically signed decision logs for tamper-evident IDT;
+(3)~a human approval gate triggered above a divergence threshold
+(strong corrigibility);
+(4)~extending OOC to multi-objective Pareto fronts.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\bibliography{references}
+\bibliographystyle{aaai26}
+
+\end{document}

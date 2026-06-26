@@ -1,0 +1,57 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# --- Secrets (NEVER commit these) ---
+.env
+.env.*
+*.key
+secrets.json
+streamlit_app/config.yaml
+
+# --- Database (contains user chat history) ---
+streamlit_app/adaptevolve.db
+*.db
+
+# --- Streamlit local config ---
+.streamlit/
+
+# --- Model cache (large binary files) ---
+models/
+
+# --- Experiment outputs (generated; re-created by analyze_results.py) ---
+experiments/results/
+llm_cache/
+hf_cache/
+
+# --- LaTeX build artifacts ---
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.toc
+*.lof
+*.lot
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+
+# --- Binary / large files ---
+*.docx
+*.pdf
+output*.png
+
+# --- Notebook backups ---
+*.bak*
+*_dump.txt
+
