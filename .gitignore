@@ -24,7 +24,10 @@ streamlit_app/adaptevolve.db
 models/
 
 # --- Experiment outputs (generated; re-created by analyze_results.py) ---
-experiments/results/
+experiments/results/figures/
+experiments/results/*.jsonl
+experiments/results/*.csv
+# allow results/tables/ to be committed once experiments are done
 llm_cache/
 hf_cache/
 
