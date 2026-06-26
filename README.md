@@ -1,12 +1,12 @@
-# AdaptEvolve
+# AdaptEvolve-MAS
 
-**AdaptEvolve** is a meta-evolutionary multi-agent framework for LLM-driven code optimization with verifiable AI safety properties.
+**AdaptEvolve-MAS** is a meta-evolutionary multi-agent framework for LLM-driven code optimization with verifiable AI safety properties.
 
 Four role-specialized agents — **Strategist** (Agentic RAG + web search), **Solver** (evolutionary programming), **Judge** (multi-criteria evaluation), and **Mechanic** (Online Objective Correction) — run in a stateful cyclic [LangGraph](https://github.com/langchain-ai/langgraph) workflow.
 
 The Mechanic agent is the core safety contribution: it reads cross-cycle performance history and dynamically re-weights evaluation criteria mid-run — without fine-tuning, without human labels, and without halting the optimization loop.
 
-> Paper: *"AdaptEvolve: Online Objective Correction in Meta-Evolutionary Multi-Agent Code Optimization"* — targeting SafeAI @ AAAI 2026.
+> Paper: *"AdaptEvolve-MAS: Online Objective Correction in Meta-Evolutionary Multi-Agent Code Optimization"* — targeting SafeAI @ AAAI 2026.
 
 ---
 
@@ -31,7 +31,7 @@ experiments/
   analyze_results.py         # Produces LaTeX tables + matplotlib figures
 
 paper/
-  main.tex                   # Full AdaptEvolve paper (AAAI 2026 format)
+  main.tex                   # Full AdaptEvolve-MAS paper (AAAI 2026 format)
   references.bib             # Bibliography
 
 AE2_upgraded.ipynb           # Original implementation notebook

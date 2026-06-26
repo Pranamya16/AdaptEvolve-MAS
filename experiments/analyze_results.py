@@ -87,7 +87,7 @@ def table_ablation(rows):
         r"\begin{table}[t]",
         r"\centering",
         r"\caption{Ablation study: mean $\pm$ std over 3 seeds. "
-        r"\textbf{Full} = complete AdaptEvolve; NoMeta = Mechanic frozen; "
+        r"\textbf{Full} = complete AdaptEvolve-MAS; NoMeta = Mechanic frozen; "
         r"NoRAG = Strategist skips web/vector search.}",
         r"\label{tab:ablation}",
         r"\begin{tabular}{llccc}",

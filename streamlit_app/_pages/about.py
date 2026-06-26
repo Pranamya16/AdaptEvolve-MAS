@@ -2,12 +2,12 @@ import streamlit as st
 
 
 def render() -> None:
-    st.title("About AdaptEvolve")
+    st.title("About AdaptEvolve-MAS")
 
     st.markdown("""
-## AdaptEvolve: Adaptive Meta-Evolutionary Multi-Agent Code Optimization
+## AdaptEvolve-MAS: Adaptive Meta-Evolutionary Multi-Agent Code Optimization
 
-AdaptEvolve is a research framework developed at **GESCOEMSR, Nashik** that addresses a fundamental
+AdaptEvolve-MAS is a research framework developed at **GESCOEMSR, Nashik** that addresses a fundamental
 limitation in LLM-based code generation: static optimization pipelines fail silently when their
 evaluation objectives misalign with the true task requirements.
 
@@ -15,7 +15,7 @@ evaluation objectives misalign with the true task requirements.
 
 ### The Pack Metaphor
 
-Like a wolf pack that restructures its hunting strategy based on terrain, AdaptEvolve uses four
+Like a wolf pack that restructures its hunting strategy based on terrain, AdaptEvolve-MAS uses four
 role-specialized AI agents that collectively adapt both *what they search for* and *how they search*:
 
 | Agent | Role | Safety Property |
@@ -29,7 +29,7 @@ role-specialized AI agents that collectively adapt both *what they search for* a
 
 ### AI Safety Properties
 
-AdaptEvolve is designed with four verifiable safety properties:
+AdaptEvolve-MAS is designed with four verifiable safety properties:
 
 1. **Bounded Autonomy (BA)** — The system terminates after at most `max_cycles` steps,
    preventing runaway autonomous operation.

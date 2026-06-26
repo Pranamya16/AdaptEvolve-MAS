@@ -33,7 +33,7 @@ from database import (
 init_db()
 
 st.set_page_config(
-    page_title="AdaptEvolve",
+    page_title="AdaptEvolve-MAS",
     page_icon="🧬",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -81,7 +81,7 @@ elif auth_status is None:
     st.stop()
 
 # ── Load pipeline once ────────────────────────────────────────────────────────
-@st.cache_resource(show_spinner="Loading AdaptEvolve pipeline…")
+@st.cache_resource(show_spinner="Loading AdaptEvolve-MAS pipeline…")
 def _load_pipeline():
     import adaptevolve_core  # noqa: triggers module-level init
     return True
@@ -100,7 +100,7 @@ if "file_context" not in st.session_state:
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## 🧬 AdaptEvolve")
+    st.markdown("## 🧬 AdaptEvolve-MAS")
     st.caption(f"Logged in as **{name}**")
     st.divider()
 

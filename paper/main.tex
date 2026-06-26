@@ -1,4 +1,4 @@
-% AdaptEvolve — AI Safety Paper
+% AdaptEvolve-MAS — AI Safety Paper
 % Target: SafeAI @ AAAI 2026 (4-6 pages) / AIES 2026
 % Compile: pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
 
@@ -19,7 +19,7 @@
 \setlength{\pdfpagewidth}{8.5in}
 \setlength{\pdfpageheight}{11in}
 
-\title{AdaptEvolve: Online Objective Correction in\\
+\title{AdaptEvolve-MAS: Online Objective Correction in\\
        Meta-Evolutionary Multi-Agent Code Optimization}
 
 \author{
@@ -41,7 +41,7 @@ failure modes: \emph{objective lock-in} (static fitness functions can be
 gamed), \emph{open-loop search} (no mechanism to detect proxy divergence
 from the true goal), and \emph{opaque adaptation} (the system modifies its
 behaviour without an interpretable audit trail).
-We present \textbf{AdaptEvolve}, a multi-agent meta-evolutionary framework
+We present \textbf{AdaptEvolve-MAS}, a multi-agent meta-evolutionary framework
 that addresses all three via four verifiable safety properties:
 \textbf{Online Objective Correction} (OOC),
 \textbf{Bounded Autonomy} (BA),
@@ -82,7 +82,7 @@ way to detect and correct divergence mid-run.
 strategy rarely expose why---the rationale for each change is not
 recorded, making post-hoc auditing impossible.
 
-We address all three with \textbf{AdaptEvolve}, a four-agent LangGraph
+We address all three with \textbf{AdaptEvolve-MAS}, a four-agent LangGraph
 pipeline in which a specialized \emph{Mechanic} agent performs
 \emph{Online Objective Correction}: it reads the cross-cycle performance
 log, identifies proxy-goal misalignment, and proposes reweighted
@@ -92,7 +92,7 @@ pass, with no gradient updates and no human labels required.
 \noindent\textbf{Contributions:}
 \begin{enumerate}
   \item Formalization of OOC as an inference-time AI safety property.
-  \item The AdaptEvolve Safety Property Set: BA, IDT, OOC, CR.
+  \item The AdaptEvolve-MAS Safety Property Set: BA, IDT, OOC, CR.
   \item A Safety Scenario Suite (SS-1--SS-4) that adversarially probes each property.
   \item Ablation evidence that OOC improves convergence on three benchmark tasks.
 \end{enumerate}
@@ -109,12 +109,12 @@ problem.  Our OOC mechanism directly targets this failure mode.
 \paragraph{Constitutional AI and RLHF.}
 \citet{bai2022} and \citet{ouyang2022} modify objectives via supervised
 fine-tuning or preference learning \emph{before} or \emph{between}
-deployments.  AdaptEvolve differs: OOC operates \emph{during} a single
+deployments.  AdaptEvolve-MAS differs: OOC operates \emph{during} a single
 inference run, requiring neither a labeled dataset nor parameter updates.
 
 \paragraph{Corrigibility.}
 \citet{soares2015} define corrigibility as the disposition to defer to
-human oversight.  AdaptEvolve implements \emph{active} corrigibility:
+human oversight.  AdaptEvolve-MAS implements \emph{active} corrigibility:
 the Mechanic \emph{self-initiates} objective corrections rather than
 waiting for external intervention.
 
@@ -130,7 +130,7 @@ LLM agents but do not include an agent whose role is to restructure
 what the other agents optimize \emph{for}.
 
 % ─────────────────────────────────────────────────────────────────────────────
-\section{The AdaptEvolve Framework}
+\section{The AdaptEvolve-MAS Framework}
 
 \subsection{System Architecture}
 
@@ -150,7 +150,7 @@ The system executes a cyclic LangGraph~\cite{langgraph} directed graph:
 \noindent\textbf{Algorithm~1} shows the top-level loop.
 
 \begin{algorithm}
-\caption{AdaptEvolve Cyclic Evolution}
+\caption{AdaptEvolve-MAS Cyclic Evolution}
 \label{alg:main}
 \begin{algorithmic}[1]
 \REQUIRE goal $g$, $C_{\max}$, initial weights $\mathbf{w}_0$
@@ -214,7 +214,7 @@ are confined to the configuration layer.
 \subsection{Bounded Autonomy (BA)}
 
 \textbf{Definition.} $n_{\text{cycles}} \leq C_{\max}$ holds for every
-run of AdaptEvolve.
+run of AdaptEvolve-MAS.
 
 \textbf{Evidence.} The \texttt{should\_continue\_evolution()} function
 returns \texttt{"end"} when \texttt{current\_cycle $\geq$ max\_cycles - 1},
@@ -287,7 +287,7 @@ pack members (graph immutability).
 runs with $C_{\max} = 3$, population size 3, and 2 generations per cycle.
 
 \begin{itemize}
-  \item \textbf{Full}: complete AdaptEvolve (Strategist + Solver + Judge + Mechanic with OOC).
+  \item \textbf{Full}: complete AdaptEvolve-MAS (Strategist + Solver + Judge + Mechanic with OOC).
   \item \textbf{NoMeta}: Mechanic runs but criteria updates are suppressed;
         $\mathbf{w}_c$ frozen at default values.
   \item \textbf{NoRAG}: Strategist skips AgenticRAG; no web or vector-store search.
@@ -375,23 +375,23 @@ SS-4 & Operator Explosion      & CR  & — \\
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Discussion}
 
-\paragraph{AdaptEvolve vs.\ Constitutional AI.}
+\paragraph{AdaptEvolve-MAS vs.\ Constitutional AI.}
 Constitutional AI~\cite{bai2022} constrains behaviour at \emph{training
 time} via a fixed rule set.  OOC operates at \emph{inference time} and
 adapts the objective based on observed performance---no fine-tuning is
 required and the correction happens within the same forward pass that
 produced the failure signal.
 
-\paragraph{AdaptEvolve vs.\ RLHF.}
+\paragraph{AdaptEvolve-MAS vs.\ RLHF.}
 RLHF~\cite{ouyang2022} requires a labeled preference dataset and multiple
 rounds of fine-tuning.  OOC requires only the system's own evaluation
 history; no human labels are needed.  The user-feedback loop (thumbs
 up/down) we collect in the web interface provides data for future reward
 model training---a complementary, not competing, mechanism.
 
-\paragraph{AdaptEvolve vs.\ debate-based oversight.}
+\paragraph{AdaptEvolve-MAS vs.\ debate-based oversight.}
 Debate~\cite{irving2018} asks models to argue against each other so
-humans can identify flaws.  AdaptEvolve modifies the \emph{objective}
+humans can identify flaws.  AdaptEvolve-MAS modifies the \emph{objective}
 that the optimization process pursues, not just flags potential flaws
 in individual outputs.
 
@@ -406,7 +406,7 @@ if $C_{\max}$ is not set.
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Conclusion and Future Work}
 
-We presented AdaptEvolve, a meta-evolutionary multi-agent system with four
+We presented AdaptEvolve-MAS, a meta-evolutionary multi-agent system with four
 verifiable safety properties.  The Mechanic agent's Online Objective
 Correction addresses the specification gaming failure mode in closed-loop
 LLM optimization without requiring fine-tuning, human labels, or halting

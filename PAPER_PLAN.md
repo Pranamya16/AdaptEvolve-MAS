@@ -1,8 +1,8 @@
-# AdaptEvolve AI Safety Paper — Plan
+# AdaptEvolve-MAS AI Safety Paper — Plan
 
 ## Paper Title
 
-**"AdaptEvolve: Online Objective Correction in Meta-Evolutionary Multi-Agent Code Optimization"**
+**"AdaptEvolve-MAS: Online Objective Correction in Meta-Evolutionary Multi-Agent Code Optimization"**
 
 Short title for arXiv: `adaptevolve-ooc-mas`
 
@@ -22,7 +22,7 @@ This is distinct from every prior method:
 
 ---
 
-## Four Safety Properties (the "AdaptEvolve" Framework)
+## Four Safety Properties (the "AdaptEvolve-MAS" Framework)
 
 | Property | Abbreviation | Where it lives in code |
 |---|---|---|
@@ -41,10 +41,10 @@ This is distinct from every prior method:
   1. **Objective lock-in**: static fitness function can be gamed
   2. **Open-loop search**: no feedback mechanism when proxy diverges from goal
   3. **Opaque adaptation**: system changes behaviour without audit trail
-- AdaptEvolve addresses all three via OOC + BA + IDT + CR
+- AdaptEvolve-MAS addresses all three via OOC + BA + IDT + CR
 - 4 claimed contributions (box at top of section):
   1. Formalization of OOC as an inference-time safety property
-  2. The AdaptEvolve Safety Property Set (BA/IDT/OOC/CR)
+  2. The AdaptEvolve-MAS Safety Property Set (BA/IDT/OOC/CR)
   3. Safety Scenario Suite (4 adversarial test cases)
   4. Ablation evidence that OOC improves convergence on 3 benchmark tasks
 
@@ -53,7 +53,7 @@ This is distinct from every prior method:
 - **Specification gaming & reward hacking** (Krakovna et al. 2020, Amodei et al. 2016)
 - **Constitutional AI** (Bai et al. 2022) — training-time, not inference-time
 - **RLHF** (Ouyang et al. 2022) — requires labeled preference dataset
-- **Corrigibility** (Soares et al. 2015) — passive; AdaptEvolve implements *active* corrigibility
+- **Corrigibility** (Soares et al. 2015) — passive; AdaptEvolve-MAS implements *active* corrigibility
 - **FunSearch / OpenEvolve** — evolutionary code optimization, no OOC
 - **Multi-agent frameworks** (AutoGen, MetaGPT, LangGraph) — no second-order loop
 - **LLM self-evaluation** (Madaan et al. 2023, Shinn et al. 2023) — within-solution, not cross-cycle objective correction
@@ -131,9 +131,9 @@ Tasks: BubbleSort optimization, Prime Sieve, Matrix Multiply
 
 ### Section 6 — Discussion (≈0.5 page)
 
-- AdaptEvolve vs Constitutional AI: inference-time vs training-time
-- AdaptEvolve vs RLHF: no labeled dataset required
-- AdaptEvolve vs debate-based oversight: modifies the optimization objective, not just flags outputs
+- AdaptEvolve-MAS vs Constitutional AI: inference-time vs training-time
+- AdaptEvolve-MAS vs RLHF: no labeled dataset required
+- AdaptEvolve-MAS vs debate-based oversight: modifies the optimization objective, not just flags outputs
 - Limitations: OOC is heuristic (LLM-driven, not formally verified), IDT quality is LLM-dependent, BA provides only a finite-step (not asymptotic) guarantee
 
 ### Section 7 — Future Work (≈0.2 page)
@@ -158,7 +158,7 @@ Tasks: BubbleSort optimization, Prime Sieve, Matrix Multiply
 
 | File | Action |
 |---|---|
-| `paper/main.tex` | Create from scratch (AdaptEvolve paper, ~6 pages, ACL/AAAI format) |
+| `paper/main.tex` | Create from scratch (AdaptEvolve-MAS paper, ~6 pages, ACL/AAAI format) |
 | `paper/references.bib` | Safety + evolutionary code optimization bibliography |
 | `experiments/run_ablation.py` | Standard 27-run ablation runner |
 | `experiments/safety_scenarios.py` | SS-1 through SS-4 scenario runners |
