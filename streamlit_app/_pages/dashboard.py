@@ -4,7 +4,7 @@ from database import get_user_sessions
 
 def render(username: str, display_name: str) -> None:
     st.title(f"Welcome back, {display_name} 👋")
-    st.markdown("### AdaptiWolf — Adaptive Meta-Evolutionary Code Optimization")
+    st.markdown("### AdaptEvolve — Adaptive Meta-Evolutionary Code Optimization")
     st.divider()
 
     sessions = get_user_sessions(username, limit=100)

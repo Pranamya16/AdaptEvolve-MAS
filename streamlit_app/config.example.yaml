@@ -14,7 +14,7 @@ cookie:
   expiry_days: 7
   # Use any random string of 32+ characters — keep it secret
   key: "REPLACE_WITH_A_RANDOM_32_CHAR_SECRET_KEY"
-  name: adaptiwolf_auth
+  name: adaptevolve_auth
 
 preauthorized:
   emails: []
